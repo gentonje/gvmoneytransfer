@@ -48,7 +48,7 @@ export const calculateExchange = (amount: number, fromCurrency: string, toCurren
       // Calculate reverse rate
       const rateEntries = Object.entries(reverseRates);
       const [baseAmount, targetAmount] = rateEntries[0];
-      const reverseRate = parseFloat(baseAmount) / parseFloat(targetAmount);
+      const reverseRate = parseInt(baseAmount) / (targetAmount as number);
       return amount / reverseRate;
     }
     
