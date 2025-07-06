@@ -1,78 +1,70 @@
 
-// Exchange rates based on the board image
-const exchangeRates = {
-  // Uganda rates
-  SSR_to_UGX: {
-    1000: 550,
-    10000: 5500
-  },
-  USD_to_UGX: {
-    100: 3850
-  },
+import { supabase } from '@/integrations/supabase/client';
+
+// Fetch exchange rates from Supabase
+export const getExchangeRates = async () => {
+  const { data, error } = await supabase
+    .from('exchange_rates')
+    .select('*')
+    .order('created_at', { ascending: false });
   
-  // Kenya rates  
-  SSR_to_KSHS: {
-    51000: 1400
-  },
-  USD_to_KSHS: {
-    100: 125
-  },
-  
-  // Withdrawal rates
-  UGX_to_SSR: {
-    10000: 45,
-    100000: 450
-  },
-  KSHS_to_SSR: {
-    1000: 45
-  },
-  
-  // US rates
-  USD_to_SSR: {
-    100: 600000
+  if (error) {
+    console.error('Error fetching exchange rates:', error);
+    return {};
   }
+  
+  // Convert to the expected format
+  const rates: any = {};
+  data?.forEach(rate => {
+    if (!rates[rate.rate_key]) {
+      rates[rate.rate_key] = {};
+    }
+    rates[rate.rate_key][rate.base_amount] = rate.exchange_amount;
+  });
+  
+  return rates;
 };
 
-export const getExchangeRates = () => exchangeRates;
-
-export const calculateExchange = (amount: number, fromCurrency: string, toCurrency: string): number => {
+export const calculateExchange = async (amount: number, fromCurrency: string, toCurrency: string): Promise<number> => {
   const rateKey = `${fromCurrency}_to_${toCurrency}`;
-  const rates = exchangeRates[rateKey as keyof typeof exchangeRates];
   
-  if (!rates) {
+  // Fetch specific rate from database
+  const { data, error } = await supabase
+    .from('exchange_rates')
+    .select('*')
+    .eq('from_currency', fromCurrency)
+    .eq('to_currency', toCurrency)
+    .order('base_amount', { ascending: true });
+  
+  if (error || !data || data.length === 0) {
     // Try reverse calculation
-    const reverseKey = `${toCurrency}_to_${fromCurrency}`;
-    const reverseRates = exchangeRates[reverseKey as keyof typeof exchangeRates];
+    const { data: reverseData, error: reverseError } = await supabase
+      .from('exchange_rates')
+      .select('*')
+      .eq('from_currency', toCurrency)
+      .eq('to_currency', fromCurrency)
+      .order('base_amount', { ascending: true });
     
-    if (reverseRates) {
-      // Calculate reverse rate
-      const rateEntries = Object.entries(reverseRates);
-      const [baseAmount, targetAmount] = rateEntries[0];
-      const reverseRate = parseInt(baseAmount) / (targetAmount as number);
-      return amount / reverseRate;
+    if (reverseError || !reverseData || reverseData.length === 0) {
+      return 0;
     }
     
-    return 0;
+    // Calculate reverse rate
+    const rate = reverseData[0];
+    const reverseRate = rate.base_amount / rate.exchange_amount;
+    return amount / reverseRate;
   }
   
   // Find the most appropriate rate based on amount
-  const rateEntries = Object.entries(rates).map(([key, value]) => ({
-    amount: parseInt(key),
-    rate: value as number
-  }));
-  
-  // Sort by amount to find closest rate
-  rateEntries.sort((a, b) => a.amount - b.amount);
-  
-  let selectedRate = rateEntries[0];
-  for (const entry of rateEntries) {
-    if (amount >= entry.amount) {
-      selectedRate = entry;
+  let selectedRate = data[0];
+  for (const rate of data) {
+    if (amount >= rate.base_amount) {
+      selectedRate = rate;
     }
   }
   
   // Calculate proportional exchange
-  const exchangeRate = selectedRate.rate / selectedRate.amount;
+  const exchangeRate = selectedRate.exchange_amount / selectedRate.base_amount;
   return amount * exchangeRate;
 };
 
@@ -82,3 +74,31 @@ export const getAvailableCurrencies = () => [
   { code: 'USD', name: 'US Dollar' },
   { code: 'KSHS', name: 'Kenyan Shilling' }
 ];
+
+// Update exchange rate in database
+export const updateExchangeRate = async (rateKey: string, exchangeAmount: number) => {
+  const { error } = await supabase
+    .from('exchange_rates')
+    .update({ exchange_amount: exchangeAmount })
+    .eq('rate_key', rateKey);
+  
+  if (error) {
+    console.error('Error updating exchange rate:', error);
+    throw error;
+  }
+};
+
+// Fetch all rates for admin panel
+export const getAllRates = async () => {
+  const { data, error } = await supabase
+    .from('exchange_rates')
+    .select('*')
+    .order('rate_key', { ascending: true });
+  
+  if (error) {
+    console.error('Error fetching all rates:', error);
+    return [];
+  }
+  
+  return data || [];
+};

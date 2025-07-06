@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import CurrencyCard from './CurrencyCard';
-import { calculateExchange, getExchangeRates } from '../utils/exchangeRates';
+import { calculateExchange, getAllRates } from '../utils/exchangeRates';
+import { useQuery } from '@tanstack/react-query';
 
 const RateCalculator = () => {
   const [amount, setAmount] = useState('');
@@ -13,15 +14,23 @@ const RateCalculator = () => {
   const [toCurrency, setToCurrency] = useState('UGX');
   const [result, setResult] = useState(0);
 
-  const rates = getExchangeRates();
+  // Fetch rates for display cards
+  const { data: ratesData = [] } = useQuery({
+    queryKey: ['exchange-rates'],
+    queryFn: getAllRates,
+  });
 
   useEffect(() => {
-    if (amount && fromCurrency && toCurrency) {
-      const calculatedAmount = calculateExchange(parseFloat(amount), fromCurrency, toCurrency);
-      setResult(calculatedAmount);
-    } else {
-      setResult(0);
-    }
+    const calculateRate = async () => {
+      if (amount && fromCurrency && toCurrency) {
+        const calculatedAmount = await calculateExchange(parseFloat(amount), fromCurrency, toCurrency);
+        setResult(calculatedAmount);
+      } else {
+        setResult(0);
+      }
+    };
+    
+    calculateRate();
   }, [amount, fromCurrency, toCurrency]);
 
   const currencies = [
@@ -30,6 +39,38 @@ const RateCalculator = () => {
     { code: 'USD', name: 'US Dollar', flag: '🇺🇸' },
     { code: 'KSHS', name: 'Kenyan Shilling', flag: '🇰🇪' }
   ];
+
+  // Group rates by country for display
+  const ugandaRates = ratesData.filter(rate => 
+    (rate.from_currency === 'SSR' && rate.to_currency === 'UGX') ||
+    (rate.from_currency === 'USD' && rate.to_currency === 'UGX')
+  ).map(rate => ({
+    from: rate.from_currency,
+    to: rate.to_currency,
+    rate: rate.exchange_amount,
+    amount: rate.base_amount
+  }));
+
+  const kenyaRates = ratesData.filter(rate => 
+    (rate.from_currency === 'SSR' && rate.to_currency === 'KSHS') ||
+    (rate.from_currency === 'USD' && rate.to_currency === 'KSHS')
+  ).map(rate => ({
+    from: rate.from_currency,
+    to: rate.to_currency,
+    rate: rate.exchange_amount,
+    amount: rate.base_amount
+  }));
+
+  const withdrawalRates = ratesData.filter(rate => 
+    (rate.from_currency === 'UGX' && rate.to_currency === 'SSR') ||
+    (rate.from_currency === 'KSHS' && rate.to_currency === 'SSR') ||
+    (rate.from_currency === 'USD' && rate.to_currency === 'SSR')
+  ).map(rate => ({
+    from: rate.from_currency,
+    to: rate.to_currency,
+    rate: rate.exchange_amount,
+    amount: rate.base_amount
+  }));
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -126,37 +167,32 @@ const RateCalculator = () => {
 
       {/* Rate Display Cards */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <CurrencyCard
-          title="Uganda Rates"
-          flag="🇺🇬"
-          rates={[
-            { from: 'SSR', to: 'UGX', rate: 550, amount: 1000 },
-            { from: 'SSR', to: 'UGX', rate: 5500, amount: 10000 },
-            { from: 'USD', to: 'UGX', rate: 3850, amount: 100 }
-          ]}
-          color="bg-gradient-to-br from-green-500 to-green-600"
-        />
+        {ugandaRates.length > 0 && (
+          <CurrencyCard
+            title="Uganda Rates"
+            flag="🇺🇬"
+            rates={ugandaRates}
+            color="bg-gradient-to-br from-green-500 to-green-600"
+          />
+        )}
         
-        <CurrencyCard
-          title="Kenya Rates"
-          flag="🇰🇪"
-          rates={[
-            { from: 'SSR', to: 'KSHS', rate: 140, amount: 51000 },
-            { from: 'USD', to: 'KSHS', rate: 125, amount: 100 }
-          ]}
-          color="bg-gradient-to-br from-red-500 to-red-600"
-        />
+        {kenyaRates.length > 0 && (
+          <CurrencyCard
+            title="Kenya Rates"
+            flag="🇰🇪"
+            rates={kenyaRates}
+            color="bg-gradient-to-br from-red-500 to-red-600"
+          />
+        )}
         
-        <CurrencyCard
-          title="Withdrawal Rates"
-          flag="💳"
-          rates={[
-            { from: 'UGX', to: 'SSR', rate: 45, amount: 10000 },
-            { from: 'UGX', to: 'SSR', rate: 450, amount: 100000 },
-            { from: 'KSHS', to: 'SSR', rate: 45, amount: 1000 }
-          ]}
-          color="bg-gradient-to-br from-purple-500 to-purple-600"
-        />
+        {withdrawalRates.length > 0 && (
+          <CurrencyCard
+            title="Withdrawal Rates"
+            flag="💳"
+            rates={withdrawalRates}
+            color="bg-gradient-to-br from-purple-500 to-purple-600"
+          />
+        )}
       </div>
     </div>
   );

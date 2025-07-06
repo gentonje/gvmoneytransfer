@@ -1,28 +1,37 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { getAllRates, updateExchangeRate } from '../utils/exchangeRates';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
-  const [rates, setRates] = useState({
-    SSR_to_UGX_1000: 550,
-    SSR_to_UGX_10000: 5500,
-    USD_to_UGX_100: 3850,
-    SSR_to_KSHS_51000: 1400,
-    USD_to_KSHS_100: 125,
-    UGX_to_SSR_10000: 45,
-    UGX_to_SSR_100000: 450,
-    KSHS_to_SSR_1000: 45,
-    USD_to_SSR_100: 600000
-  });
+  const [rates, setRates] = useState<{[key: string]: number}>({});
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const correctPassword = '@#$_&-+()/'
+
+  // Fetch rates from database
+  const { data: ratesData = [], isLoading } = useQuery({
+    queryKey: ['exchange-rates'],
+    queryFn: getAllRates,
+    enabled: isAuthenticated,
+  });
+
+  useEffect(() => {
+    if (ratesData.length > 0) {
+      const ratesMap: {[key: string]: number} = {};
+      ratesData.forEach(rate => {
+        ratesMap[rate.rate_key] = rate.exchange_amount;
+      });
+      setRates(ratesMap);
+    }
+  }, [ratesData]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,13 +57,29 @@ const Admin = () => {
     }));
   };
 
-  const handleSaveRates = () => {
-    // In a real app, this would save to a database
-    // For now, we'll just show a success message
-    toast({
-      title: "Rates Updated",
-      description: "Exchange rates have been saved successfully",
-    });
+  const handleSaveRates = async () => {
+    try {
+      // Update all rates in database
+      const updatePromises = Object.entries(rates).map(([rateKey, exchangeAmount]) =>
+        updateExchangeRate(rateKey, exchangeAmount)
+      );
+      
+      await Promise.all(updatePromises);
+      
+      // Refresh the data
+      queryClient.invalidateQueries({ queryKey: ['exchange-rates'] });
+      
+      toast({
+        title: "Rates Updated",
+        description: "Exchange rates have been saved successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update exchange rates",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!isAuthenticated) {
@@ -87,6 +112,31 @@ const Admin = () => {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 flex items-center justify-center">
+        <div className="text-xl">Loading rates...</div>
+      </div>
+    );
+  }
+
+  // Group rates by categories
+  const ugandaRates = ratesData.filter(rate => 
+    (rate.from_currency === 'SSR' && rate.to_currency === 'UGX') ||
+    (rate.from_currency === 'USD' && rate.to_currency === 'UGX')
+  );
+  
+  const kenyaRates = ratesData.filter(rate => 
+    (rate.from_currency === 'SSR' && rate.to_currency === 'KSHS') ||
+    (rate.from_currency === 'USD' && rate.to_currency === 'KSHS')
+  );
+  
+  const otherRates = ratesData.filter(rate => 
+    (rate.from_currency === 'UGX' && rate.to_currency === 'SSR') ||
+    (rate.from_currency === 'KSHS' && rate.to_currency === 'SSR') ||
+    (rate.from_currency === 'USD' && rate.to_currency === 'SSR')
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 p-4">
       <div className="max-w-6xl mx-auto">
@@ -110,30 +160,16 @@ const Admin = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
-              <div>
-                <Label>1000 SSR to UGX</Label>
-                <Input
-                  type="number"
-                  value={rates.SSR_to_UGX_1000}
-                  onChange={(e) => handleRateChange('SSR_to_UGX_1000', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>10000 SSR to UGX</Label>
-                <Input
-                  type="number"
-                  value={rates.SSR_to_UGX_10000}
-                  onChange={(e) => handleRateChange('SSR_to_UGX_10000', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>100 USD to UGX</Label>
-                <Input
-                  type="number"
-                  value={rates.USD_to_UGX_100}
-                  onChange={(e) => handleRateChange('USD_to_UGX_100', e.target.value)}
-                />
-              </div>
+              {ugandaRates.map((rate) => (
+                <div key={rate.rate_key}>
+                  <Label>{rate.base_amount} {rate.from_currency} to {rate.to_currency}</Label>
+                  <Input
+                    type="number"
+                    value={rates[rate.rate_key] || ''}
+                    onChange={(e) => handleRateChange(rate.rate_key, e.target.value)}
+                  />
+                </div>
+              ))}
             </CardContent>
           </Card>
 
@@ -146,26 +182,20 @@ const Admin = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
-              <div>
-                <Label>51000 SSR to KSHS</Label>
-                <Input
-                  type="number"
-                  value={rates.SSR_to_KSHS_51000}
-                  onChange={(e) => handleRateChange('SSR_to_KSHS_51000', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>100 USD to KSHS</Label>
-                <Input
-                  type="number"
-                  value={rates.USD_to_KSHS_100}
-                  onChange={(e) => handleRateChange('USD_to_KSHS_100', e.target.value)}
-                />
-              </div>
+              {kenyaRates.map((rate) => (
+                <div key={rate.rate_key}>
+                  <Label>{rate.base_amount} {rate.from_currency} to {rate.to_currency}</Label>
+                  <Input
+                    type="number"
+                    value={rates[rate.rate_key] || ''}
+                    onChange={(e) => handleRateChange(rate.rate_key, e.target.value)}
+                  />
+                </div>
+              ))}
             </CardContent>
           </Card>
 
-          {/* Withdrawal & US Rates */}
+          {/* Other Rates */}
           <Card>
             <CardHeader className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
               <CardTitle className="flex items-center gap-2">
@@ -174,38 +204,16 @@ const Admin = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
-              <div>
-                <Label>10000 UGX to SSR</Label>
-                <Input
-                  type="number"
-                  value={rates.UGX_to_SSR_10000}
-                  onChange={(e) => handleRateChange('UGX_to_SSR_10000', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>100000 UGX to SSR</Label>
-                <Input
-                  type="number"
-                  value={rates.UGX_to_SSR_100000}
-                  onChange={(e) => handleRateChange('UGX_to_SSR_100000', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>1000 KSHS to SSR</Label>
-                <Input
-                  type="number"
-                  value={rates.KSHS_to_SSR_1000}
-                  onChange={(e) => handleRateChange('KSHS_to_SSR_1000', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>100 USD to SSR</Label>
-                <Input
-                  type="number"
-                  value={rates.USD_to_SSR_100}
-                  onChange={(e) => handleRateChange('USD_to_SSR_100', e.target.value)}
-                />
-              </div>
+              {otherRates.map((rate) => (
+                <div key={rate.rate_key}>
+                  <Label>{rate.base_amount} {rate.from_currency} to {rate.to_currency}</Label>
+                  <Input
+                    type="number"
+                    value={rates[rate.rate_key] || ''}
+                    onChange={(e) => handleRateChange(rate.rate_key, e.target.value)}
+                  />
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>
