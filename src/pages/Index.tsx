@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import RateCalculator from '../components/RateCalculator';
 
 const Index = () => {
@@ -16,8 +17,14 @@ const Index = () => {
         
         <RateCalculator />
         
-        <div className="text-center mt-12 text-gray-500">
-          <p className="text-sm">Rates updated daily • Secure transfers • Trusted service</p>
+        <div className="text-center mt-12">
+          <p className="text-sm text-gray-500 mb-4">Rates updated daily • Secure transfers • Trusted service</p>
+          <Link 
+            to="/admin" 
+            className="text-xs text-gray-400 hover:text-gray-600 underline"
+          >
+            Admin
+          </Link>
         </div>
       </div>
     </div>
