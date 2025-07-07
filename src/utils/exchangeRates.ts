@@ -13,6 +13,8 @@ export const getExchangeRates = async () => {
     return {};
   }
   
+  console.log('Fetched exchange rates data:', data);
+  
   // Convert to the expected format
   const rates: any = {};
   data?.forEach(rate => {
@@ -26,7 +28,7 @@ export const getExchangeRates = async () => {
 };
 
 export const calculateExchange = async (amount: number, fromCurrency: string, toCurrency: string): Promise<number> => {
-  const rateKey = `${fromCurrency}_to_${toCurrency}`;
+  console.log(`Calculating exchange: ${amount} ${fromCurrency} to ${toCurrency}`);
   
   // Fetch specific rate from database
   const { data, error } = await supabase
@@ -36,7 +38,10 @@ export const calculateExchange = async (amount: number, fromCurrency: string, to
     .eq('to_currency', toCurrency)
     .order('base_amount', { ascending: true });
   
+  console.log('Direct exchange rate query result:', { data, error });
+  
   if (error || !data || data.length === 0) {
+    console.log('No direct rate found, trying reverse calculation');
     // Try reverse calculation
     const { data: reverseData, error: reverseError } = await supabase
       .from('exchange_rates')
@@ -45,14 +50,19 @@ export const calculateExchange = async (amount: number, fromCurrency: string, to
       .eq('to_currency', fromCurrency)
       .order('base_amount', { ascending: true });
     
+    console.log('Reverse exchange rate query result:', { reverseData, reverseError });
+    
     if (reverseError || !reverseData || reverseData.length === 0) {
+      console.log('No exchange rate found in either direction');
       return 0;
     }
     
     // Calculate reverse rate
     const rate = reverseData[0];
     const reverseRate = rate.base_amount / rate.exchange_amount;
-    return amount / reverseRate;
+    const result = amount / reverseRate;
+    console.log('Reverse calculation result:', result);
+    return result;
   }
   
   // Find the most appropriate rate based on amount
@@ -63,9 +73,14 @@ export const calculateExchange = async (amount: number, fromCurrency: string, to
     }
   }
   
+  console.log('Selected rate:', selectedRate);
+  
   // Calculate proportional exchange
   const exchangeRate = selectedRate.exchange_amount / selectedRate.base_amount;
-  return amount * exchangeRate;
+  const result = amount * exchangeRate;
+  console.log('Final calculation:', { exchangeRate, result });
+  
+  return result;
 };
 
 export const getAvailableCurrencies = () => [

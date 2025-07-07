@@ -13,27 +13,38 @@ const RateCalculator = () => {
   const [toCurrency, setToCurrency] = useState('UGX');
   const [result, setResult] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const calculateRate = async () => {
       if (amount && fromCurrency && toCurrency && parseFloat(amount) > 0) {
         setIsCalculating(true);
+        setError('');
+        console.log('Calculating exchange rate for:', { amount: parseFloat(amount), fromCurrency, toCurrency });
+        
         try {
           const calculatedAmount = await calculateExchange(parseFloat(amount), fromCurrency, toCurrency);
+          console.log('Calculated result:', calculatedAmount);
           setResult(calculatedAmount);
+          
+          if (calculatedAmount === 0) {
+            setError(`No exchange rate found for ${fromCurrency} to ${toCurrency}`);
+          }
         } catch (error) {
           console.error('Error calculating exchange rate:', error);
           setResult(0);
+          setError('Error calculating exchange rate');
         } finally {
           setIsCalculating(false);
         }
       } else {
         setResult(0);
+        setError('');
       }
     };
     
     // Add a small debounce to avoid too many API calls
-    const timeoutId = setTimeout(calculateRate, 100);
+    const timeoutId = setTimeout(calculateRate, 300);
     return () => clearTimeout(timeoutId);
   }, [amount, fromCurrency, toCurrency]);
 
@@ -79,7 +90,7 @@ const RateCalculator = () => {
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">From</Label>
             <Select value={fromCurrency} onValueChange={setFromCurrency}>
-              <SelectTrigger className="h-12 border-2 border-orange-200 focus:border-orange-500 bg-white">
+              <SelectTrigger className="h-12 border-2 border-orange-200 focus:border-orange-500 bg-white z-50">
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
               <SelectContent className="bg-white border-2 border-orange-200 shadow-lg z-[100]">
@@ -123,7 +134,7 @@ const RateCalculator = () => {
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">To</Label>
             <Select value={toCurrency} onValueChange={setToCurrency}>
-              <SelectTrigger className="h-12 border-2 border-green-200 focus:border-green-500 bg-white">
+              <SelectTrigger className="h-12 border-2 border-green-200 focus:border-green-500 bg-white z-50">
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
               <SelectContent className="bg-white border-2 border-green-200 shadow-lg z-[100]">
@@ -142,6 +153,13 @@ const RateCalculator = () => {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Error message */}
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
 
           {/* Result summary */}
           {amount && result > 0 && !isCalculating && (
