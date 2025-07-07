@@ -12,19 +12,38 @@ const RateCalculator = () => {
   const [fromCurrency, setFromCurrency] = useState('SSP');
   const [toCurrency, setToCurrency] = useState('UGX');
   const [result, setResult] = useState(0);
+  const [isCalculating, setIsCalculating] = useState(false);
 
   useEffect(() => {
     const calculateRate = async () => {
-      if (amount && fromCurrency && toCurrency) {
-        const calculatedAmount = await calculateExchange(parseFloat(amount), fromCurrency, toCurrency);
-        setResult(calculatedAmount);
+      if (amount && fromCurrency && toCurrency && parseFloat(amount) > 0) {
+        setIsCalculating(true);
+        try {
+          const calculatedAmount = await calculateExchange(parseFloat(amount), fromCurrency, toCurrency);
+          setResult(calculatedAmount);
+        } catch (error) {
+          console.error('Error calculating exchange rate:', error);
+          setResult(0);
+        } finally {
+          setIsCalculating(false);
+        }
       } else {
         setResult(0);
       }
     };
     
-    calculateRate();
+    // Add a small debounce to avoid too many API calls
+    const timeoutId = setTimeout(calculateRate, 100);
+    return () => clearTimeout(timeoutId);
   }, [amount, fromCurrency, toCurrency]);
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow only numbers and decimal point
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setAmount(value);
+    }
+  };
 
   const currencies = [
     { code: 'SSP', name: 'South Sudanese Pound', flag: '🇸🇸' },
@@ -47,10 +66,11 @@ const RateCalculator = () => {
             </Label>
             <Input
               id="send-amount"
-              type="number"
+              type="text"
+              inputMode="decimal"
               placeholder="Enter amount"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={handleAmountChange}
               className="text-lg h-12 border-2 border-orange-200 focus:border-orange-500"
             />
           </div>
@@ -93,7 +113,7 @@ const RateCalculator = () => {
             </Label>
             <Input
               type="text"
-              value={result > 0 ? result.toLocaleString() : '0'}
+              value={isCalculating ? 'Calculating...' : (result > 0 ? result.toLocaleString() : '0')}
               readOnly
               className="text-lg h-12 bg-green-50 border-2 border-green-200 font-bold text-green-700"
             />
@@ -124,7 +144,7 @@ const RateCalculator = () => {
           </div>
 
           {/* Result summary */}
-          {amount && result > 0 && (
+          {amount && result > 0 && !isCalculating && (
             <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-l-4 border-green-500">
               <p className="text-sm text-gray-600 text-center">
                 <span className="font-semibold">{amount} {fromCurrency}</span> = 
