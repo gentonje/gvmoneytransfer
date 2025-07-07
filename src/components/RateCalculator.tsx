@@ -59,12 +59,16 @@ const RateCalculator = () => {
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">From</Label>
             <Select value={fromCurrency} onValueChange={setFromCurrency}>
-              <SelectTrigger className="h-12 border-2 border-orange-200 focus:border-orange-500">
-                <SelectValue />
+              <SelectTrigger className="h-12 border-2 border-orange-200 focus:border-orange-500 bg-white">
+                <SelectValue placeholder="Select currency" />
               </SelectTrigger>
-              <SelectContent className="bg-white border-2 border-orange-200 z-50">
+              <SelectContent className="bg-white border-2 border-orange-200 shadow-lg z-[100]">
                 {currencies.map((currency) => (
-                  <SelectItem key={currency.code} value={currency.code} className="hover:bg-orange-50">
+                  <SelectItem 
+                    key={currency.code} 
+                    value={currency.code} 
+                    className="hover:bg-orange-50 cursor-pointer bg-white"
+                  >
                     <div className="flex items-center gap-2">
                       <span className="text-base">{currency.flag}</span>
                       <span>{currency.code}</span>
@@ -99,12 +103,16 @@ const RateCalculator = () => {
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">To</Label>
             <Select value={toCurrency} onValueChange={setToCurrency}>
-              <SelectTrigger className="h-12 border-2 border-green-200 focus:border-green-500">
-                <SelectValue />
+              <SelectTrigger className="h-12 border-2 border-green-200 focus:border-green-500 bg-white">
+                <SelectValue placeholder="Select currency" />
               </SelectTrigger>
-              <SelectContent className="bg-white border-2 border-green-200 z-50">
+              <SelectContent className="bg-white border-2 border-green-200 shadow-lg z-[100]">
                 {currencies.map((currency) => (
-                  <SelectItem key={currency.code} value={currency.code} className="hover:bg-green-50">
+                  <SelectItem 
+                    key={currency.code} 
+                    value={currency.code} 
+                    className="hover:bg-green-50 cursor-pointer bg-white"
+                  >
                     <div className="flex items-center gap-2">
                       <span className="text-base">{currency.flag}</span>
                       <span>{currency.code}</span>
