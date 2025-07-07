@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getAllRates, updateExchangeRate } from '../utils/exchangeRates';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import CurrencyCard from '../components/CurrencyCard';
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -120,18 +121,50 @@ const Admin = () => {
     );
   }
 
-  // Group rates by categories
+  // Group rates by categories for display cards
   const ugandaRates = ratesData.filter(rate => 
+    (rate.from_currency === 'SSR' && rate.to_currency === 'UGX') ||
+    (rate.from_currency === 'USD' && rate.to_currency === 'UGX')
+  ).map(rate => ({
+    from: rate.from_currency,
+    to: rate.to_currency,
+    rate: rate.exchange_amount,
+    amount: rate.base_amount
+  }));
+
+  const kenyaRates = ratesData.filter(rate => 
+    (rate.from_currency === 'SSR' && rate.to_currency === 'KSHS') ||
+    (rate.from_currency === 'USD' && rate.to_currency === 'KSHS')
+  ).map(rate => ({
+    from: rate.from_currency,
+    to: rate.to_currency,
+    rate: rate.exchange_amount,
+    amount: rate.base_amount
+  }));
+
+  const withdrawalRates = ratesData.filter(rate => 
+    (rate.from_currency === 'UGX' && rate.to_currency === 'SSR') ||
+    (rate.from_currency === 'KSHS' && rate.to_currency === 'SSR') ||
+    (rate.from_currency === 'USD' && rate.to_currency === 'SSR')
+  ).map(rate => ({
+    from: rate.from_currency,
+    to: rate.to_currency,
+    rate: rate.exchange_amount,
+    amount: rate.base_amount
+  }));
+
+  // Group rates by categories for editing
+  const ugandaEditRates = ratesData.filter(rate => 
     (rate.from_currency === 'SSR' && rate.to_currency === 'UGX') ||
     (rate.from_currency === 'USD' && rate.to_currency === 'UGX')
   );
   
-  const kenyaRates = ratesData.filter(rate => 
+  const kenyaEditRates = ratesData.filter(rate => 
     (rate.from_currency === 'SSR' && rate.to_currency === 'KSHS') ||
     (rate.from_currency === 'USD' && rate.to_currency === 'KSHS')
   );
   
-  const otherRates = ratesData.filter(rate => 
+  const otherEditRates = ratesData.filter(rate => 
     (rate.from_currency === 'UGX' && rate.to_currency === 'SSR') ||
     (rate.from_currency === 'KSHS' && rate.to_currency === 'SSR') ||
     (rate.from_currency === 'USD' && rate.to_currency === 'SSR')
@@ -141,7 +174,7 @@ const Admin = () => {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 p-4">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800">Admin Panel</h1>
+          <h1 className="text-4xl font-bold text-gray-800">GV Money Transfer - Admin</h1>
           <Button 
             variant="outline" 
             onClick={() => setIsAuthenticated(false)}
@@ -150,6 +183,37 @@ const Admin = () => {
           </Button>
         </div>
 
+        {/* Rate Display Cards */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {ugandaRates.length > 0 && (
+            <CurrencyCard
+              title="Uganda Rates"
+              flag="🇺🇬"
+              rates={ugandaRates}
+              color="bg-gradient-to-br from-green-500 to-green-600"
+            />
+          )}
+          
+          {kenyaRates.length > 0 && (
+            <CurrencyCard
+              title="Kenya Rates"
+              flag="🇰🇪"
+              rates={kenyaRates}
+              color="bg-gradient-to-br from-red-500 to-red-600"
+            />
+          )}
+          
+          {withdrawalRates.length > 0 && (
+            <CurrencyCard
+              title="Withdrawal Rates"
+              flag="💳"
+              rates={withdrawalRates}
+              color="bg-gradient-to-br from-purple-500 to-purple-600"
+            />
+          )}
+        </div>
+
+        {/* Rate Editing Section */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Uganda Rates */}
           <Card>
@@ -160,7 +224,7 @@ const Admin = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
-              {ugandaRates.map((rate) => (
+              {ugandaEditRates.map((rate) => (
                 <div key={rate.rate_key}>
                   <Label>{rate.base_amount} {rate.from_currency} to {rate.to_currency}</Label>
                   <Input
@@ -182,7 +246,7 @@ const Admin = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
-              {kenyaRates.map((rate) => (
+              {kenyaEditRates.map((rate) => (
                 <div key={rate.rate_key}>
                   <Label>{rate.base_amount} {rate.from_currency} to {rate.to_currency}</Label>
                   <Input
@@ -204,7 +268,7 @@ const Admin = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
-              {otherRates.map((rate) => (
+              {otherEditRates.map((rate) => (
                 <div key={rate.rate_key}>
                   <Label>{rate.base_amount} {rate.from_currency} to {rate.to_currency}</Label>
                   <Input
