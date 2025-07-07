@@ -69,7 +69,7 @@ export const calculateExchange = async (amount: number, fromCurrency: string, to
 };
 
 export const getAvailableCurrencies = () => [
-  { code: 'SSR', name: 'South Sudanese Pound' },
+  { code: 'SSP', name: 'South Sudanese Pound' },
   { code: 'UGX', name: 'Ugandan Shilling' },
   { code: 'USD', name: 'US Dollar' },
   { code: 'KSHS', name: 'Kenyan Shilling' }

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ const Admin = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const correctPassword = '@#$_&-+()/'
+  const correctPassword = '@#$_&-+()/';
 
   // Fetch rates from database
   const { data: ratesData = [], isLoading } = useQuery({
@@ -123,7 +124,7 @@ const Admin = () => {
 
   // Group rates by categories for display cards
   const ugandaRates = ratesData.filter(rate => 
-    (rate.from_currency === 'SSR' && rate.to_currency === 'UGX') ||
+    (rate.from_currency === 'SSP' && rate.to_currency === 'UGX') ||
     (rate.from_currency === 'USD' && rate.to_currency === 'UGX')
   ).map(rate => ({
     from: rate.from_currency,
@@ -133,7 +134,7 @@ const Admin = () => {
   }));
 
   const kenyaRates = ratesData.filter(rate => 
-    (rate.from_currency === 'SSR' && rate.to_currency === 'KSHS') ||
+    (rate.from_currency === 'SSP' && rate.to_currency === 'KSHS') ||
     (rate.from_currency === 'USD' && rate.to_currency === 'KSHS')
   ).map(rate => ({
     from: rate.from_currency,
@@ -143,9 +144,9 @@ const Admin = () => {
   }));
 
   const withdrawalRates = ratesData.filter(rate => 
-    (rate.from_currency === 'UGX' && rate.to_currency === 'SSR') ||
-    (rate.from_currency === 'KSHS' && rate.to_currency === 'SSR') ||
-    (rate.from_currency === 'USD' && rate.to_currency === 'SSR')
+    (rate.from_currency === 'UGX' && rate.to_currency === 'SSP') ||
+    (rate.from_currency === 'KSHS' && rate.to_currency === 'SSP') ||
+    (rate.from_currency === 'USD' && rate.to_currency === 'SSP')
   ).map(rate => ({
     from: rate.from_currency,
     to: rate.to_currency,
@@ -155,19 +156,19 @@ const Admin = () => {
 
   // Group rates by categories for editing
   const ugandaEditRates = ratesData.filter(rate => 
-    (rate.from_currency === 'SSR' && rate.to_currency === 'UGX') ||
+    (rate.from_currency === 'SSP' && rate.to_currency === 'UGX') ||
     (rate.from_currency === 'USD' && rate.to_currency === 'UGX')
   );
   
   const kenyaEditRates = ratesData.filter(rate => 
-    (rate.from_currency === 'SSR' && rate.to_currency === 'KSHS') ||
+    (rate.from_currency === 'SSP' && rate.to_currency === 'KSHS') ||
     (rate.from_currency === 'USD' && rate.to_currency === 'KSHS')
   );
   
   const otherEditRates = ratesData.filter(rate => 
-    (rate.from_currency === 'UGX' && rate.to_currency === 'SSR') ||
-    (rate.from_currency === 'KSHS' && rate.to_currency === 'SSR') ||
-    (rate.from_currency === 'USD' && rate.to_currency === 'SSR')
+    (rate.from_currency === 'UGX' && rate.to_currency === 'SSP') ||
+    (rate.from_currency === 'KSHS' && rate.to_currency === 'SSP') ||
+    (rate.from_currency === 'USD' && rate.to_currency === 'SSP')
   );
 
   return (

@@ -9,7 +9,7 @@ import { ArrowRight } from 'lucide-react';
 
 const RateCalculator = () => {
   const [amount, setAmount] = useState('');
-  const [fromCurrency, setFromCurrency] = useState('SSR');
+  const [fromCurrency, setFromCurrency] = useState('SSP');
   const [toCurrency, setToCurrency] = useState('UGX');
   const [result, setResult] = useState(0);
 
@@ -27,7 +27,7 @@ const RateCalculator = () => {
   }, [amount, fromCurrency, toCurrency]);
 
   const currencies = [
-    { code: 'SSR', name: 'South Sudanese Pound', flag: '🇸🇸' },
+    { code: 'SSP', name: 'South Sudanese Pound', flag: '🇸🇸' },
     { code: 'UGX', name: 'Ugandan Shilling', flag: '🇺🇬' },
     { code: 'USD', name: 'US Dollar', flag: '🇺🇸' },
     { code: 'KSHS', name: 'Kenyan Shilling', flag: '🇰🇪' }
